@@ -19,5 +19,3 @@
 **Note**: This project is for learning and practice purposes only. No actual transactions or real user data are involved.
 
 ---
-
-Feel free to modify this according to the technologies you use or any additional features you might want to highlight!
