@@ -1,5 +1,5 @@
-# Re | Readable: Buy & Sell Used Books  
 # ** STILL IN PROGRESS **
+# Re | Readable: Buy & Sell Used Books  
 
 **Re | Readable** is a fictional website created as an exercise to simulate an online platform where users can buy and sell used books. This project is intended purely for practice, with no real-world transactions or functionality. It demonstrates basic web development principles, including user authentication, product listings, shopping cart features, and responsive design.
 
