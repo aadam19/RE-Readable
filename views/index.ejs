@@ -1,7 +1,9 @@
-<a href="https://www.google.com/url?sa=i&url=https%3A%2F%2Fzagrajwsztuke.pl%2Fen%2Fjan-matejko%2F&psig=AOvVaw0Z3xqhXyyzSbzHaOoxX1zI&ust=1725049145857000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCNiLtv6Cm4gDFQAAAAAdAAAAABAn" target="_blank">
-    <img src="/images/jan_matejko.jpg" alt="BATTLE" class="hero-image" width="981" height="528">
-
-</a>
+<div class="image-container">
+    <a href="https://www.google.com/url?sa=i&url=https%3A%2F%2Fzagrajwsztuke.pl%2Fen%2Fjan-matejko%2F&psig=AOvVaw0Z3xqhXyyzSbzHaOoxX1zI&ust=1725049145857000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCNiLtv6Cm4gDFQAAAAAdAAAAABAn" target="_blank">
+        <img src="/images/jan_matejko.jpg" alt="BATTLE" class="hero-image" width="981" height="528">
+        <div class="overlay-text">Make your old books reReadable!</div>
+    </a>
+</div>
 
 <section class="articles">
     <% if( previousPage === null) { %> 
@@ -12,12 +14,22 @@
             <li>
                 <a href="/books/<%= element._id %>" class="no-underline">
                     <article class="book-article">
-                        <img src="<%= element.img %>" alt="Book Image" class="book-image" width="100" height="150">
+
+                        <div class="book-image-container">
+                            <img src="<%= element.img %>" alt="Book Image" class="book-image" width="100" height="150">
+                            <div class="hover-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" fill="rgba(255, 255, 255, 0.8)">
+                                    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm0 4c1.2 0 2 .8 2 2s-.8 2-2 2-2-.8-2-2 .8-2 2-2zm2 14h-4v-2h1v-5h-1V9h3v7h1v2z"/>
+                                </svg>
+                            </div>
+                        </div>
+
                         <div class="book-details">
                             <h3 class="book-title"><%= truncateString(element.title, 16) %></h3>
                             <p class="book-author"><%= truncateString(element.author, 20) %></p>
                             <p class="book-price"><%= element.price %>$</p>
                         </div>
+                        
                     </article>
                 </a>
             </li>

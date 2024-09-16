@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login / Register</title>
+    <link rel="stylesheet" type="text/css" href="../public/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            background-color: beige;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav {
+            padding: 15px;
+            text-align: center;
+        }
+
+        nav a {
+            visibility: hidden;
+        }
+
+        .header_button {
+            display: none;
+        }
+
+        form {
+            display: none;
+        }
+
+        form.active {
+            display: block;
+        }
+
+        .alert {
+            justify-content: center;
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+
+        .alert-danger {
+            color: #a94442;
+            background-color: #f2dede;
+            border-color: #ebccd1;
+        }
+
+        .alert-success {
+            color: #3c763d;
+            background-color: #dff0d8;
+            border-color: #d6e9c6;
+        }
+
+        .input-group {
+            position: relative;
+            align-items: center;
+        }
+
+        input[type="password"], input[type="email"], input[type="text"] {
+            width: 100%;
+            padding-right: 40px; /* Space for the eye icon */
+            box-sizing: border-box;
+            border-radius: 5px;
+            border: 2px solid #ccc;
+        }
+
+        .input-group .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 65%;
+            transform: translateY(-32%);
+            cursor: pointer;
+            color: black;
+            font-size: 18px;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <% if (messages.error && messages.error.length > 0) { %>
+        <div class="alert alert-danger">
+            <% messages.error.forEach(function(msg) { %>
+                <p><%= msg %></p>
+            <% }); %>
+        </div>
+    <% } %>
+
+    <% if (messages.success && messages.success.length > 0) { %>
+        <div class="alert alert-success">
+            <% messages.success.forEach(function(msg) { %>
+                <p><%= msg %></p>
+            <% }); %>
+        </div>
+    <% } %>
+
+    <div class="container-login">
+        <div class="form-container-login">
+            <div class="form-toggle">
+                <button id="loginBtn">Login</button>
+                <button id="registerBtn">Register</button>
+            </div>
+
+            <form id="loginForm" action="/account" method="POST" class="active">
+                <input type="hidden" name="action" value="login">
+                <h2>Login</h2>
+                <div class="input-group">
+                    <label for="login-email">Email:</label>
+                    <input type="email" id="login-email" name="email" placeholder="Enter your email" required>
+                </div>
+                <div class="input-group">
+                    <label for="login-password">Password:</label>
+                    <input type="password" id="login-password" name="password" placeholder="Enter your password" required>
+                    <i class="fas fa-eye toggle-password" onclick="togglePassword('login-password')"></i>
+                </div>
+                <button type="submit" class="btn">Login</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" action="/account" method="POST">
+                <input type="hidden" name="action" value="register">
+                <h2>Register</h2>
+                <div class="input-group">
+                    <label for="reg-email">Email:</label>
+                    <input type="email" id="reg-email" name="email" placeholder="Enter your email" required>
+                </div>
+                <div class="input-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                </div>
+                <div class="input-group">
+                    <label for="reg-password">Password:</label>
+                    <input type="password" id="reg-password" name="password" placeholder="Enter your password" required>
+                    <i class="fas fa-eye toggle-password" onclick="togglePassword('reg-password')"></i>
+                </div>
+                <div class="input-group">
+                    <label for="reg-confirm-password">Confirm Password:</label>
+                    <input type="password" id="reg-confirm-password" name="confirmPassword" placeholder="Confirm your password" required>
+                    <i class="fas fa-eye toggle-password" onclick="togglePassword('reg-confirm-password')"></i>
+                </div>
+                <button type="submit" class="btn">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword(id) {
+            const passwordField = document.getElementById(id);
+            const type = passwordField.type === 'password' ? 'text' : 'password';
+            passwordField.type = type;
+            const icon = event.target;
+            icon.classList.toggle('fa-eye-slash');
+        }
+
+        window.onload = function() {
+            const showRegisterForm = <%= typeof showRegisterForm !== 'undefined' ? showRegisterForm : false %>;
+            if (showRegisterForm) {
+                document.getElementById('registerBtn').click();
+            } else {
+                document.getElementById('loginBtn').click();
+            }
+        };
+    </script>
+</body>
+</html>

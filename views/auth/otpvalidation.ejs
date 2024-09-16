@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTP Verification</title>
+    <link rel="stylesheet" href="../../public/css/style.css">
+</head>
+<body>
+
+    <% if (messages.error) { %>
+        <div class="alert alert-danger">
+            <%= messages.error %>
+        </div>
+    <% } %>
+    
+    <% if (messages.success) { %>
+        <div class="alert alert-success">
+            <%= messages.success %>
+        </div>
+    <% } %>
+    
+    <div class="container-otp">
+        <div class="card text-center">
+            <h6>Please enter the one-time password <br> to verify your account</h6>
+            <div><span>A code has been sent to <b><%= email %></b></span></div>
+
+            <!-- OTP Form -->
+            <form action="/otpvalidation" method="POST">
+                <!-- Hidden userId input -->
+                <input type="hidden" name="userId" value="<%= userId %>">
+                
+                <!-- OTP inputs -->
+                <div id="otp" class="inputs d-flex justify-content-center mt-2">
+                    <input class="text-center" type="text" id="first" maxlength="1" name="otp[]" />
+                    <input class="text-center" type="text" id="second" maxlength="1" name="otp[]" />
+                    <input class="text-center" type="text" id="third" maxlength="1" name="otp[]" />
+                    <input class="text-center" type="text" id="fourth" maxlength="1" name="otp[]" />
+                    <input class="text-center" type="text" id="fifth" maxlength="1" name="otp[]" />
+                    <input class="text-center" type="text" id="sixth" maxlength="1" name="otp[]" />
+                </div>
+
+                <!-- Submit button -->
+                <div class="mt-4">
+                    <button type="submit" class="validate">Validate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+    <script>
+        // This function makes the OTP input fields smooth (no need to click on each field to enter the OTP)
+        document.addEventListener("DOMContentLoaded", function(event) {
+            function OTPInput() {
+                const inputs = document.querySelectorAll('#otp > *[id]');
+                
+                inputs.forEach((input, index) => {
+                    input.addEventListener('keydown', function(event) {
+                        if (event.key === "Backspace") {
+                            input.value = '';
+                            if (index !== 0) inputs[index - 1].focus();
+                        } else {
+                            if (index === inputs.length - 1 && input.value !== '') {
+                                return true;
+                            } else if (event.keyCode > 47 && event.keyCode < 58) {
+                                input.value = event.key;
+                                if (index !== inputs.length - 1) inputs[index + 1].focus();
+                                event.preventDefault();
+                            } else if (event.keyCode > 64 && event.keyCode < 91) {
+                                input.value = String.fromCharCode(event.keyCode);
+                                if (index !== inputs.length - 1) inputs[index + 1].focus();
+                                event.preventDefault();
+                            }
+                        }
+                    });
+                });
+            }
+            OTPInput();
+        });
+    </script>
+</body>
+</html>
