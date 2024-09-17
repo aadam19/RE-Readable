@@ -118,137 +118,124 @@ router.post('/search', async (req, res)=>{
 
 
 /* ACCOUNT */
+
+// Helper function for readability
+const renderWithMessages = (res, view, messages, showRegisterForm, email = '', username = '') => {
+    res.render(view, {
+        messages: messages,
+        showRegisterForm: showRegisterForm,
+        email: email || '',
+        username: username || ''
+    });
+};
+
+const isValidEmail = (email) => {
+    const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    return emailPattern.test(email);
+};
+
+const isValidPassword = (password) => {
+    const passwordAllowed = /^[a-zA-Z0-9!.@#$%^&*]{6,20}$/;
+    return passwordAllowed.test(password);
+};
+
 router.get('/account', (req, res) => {
-    return res.render('register', { messages: req.flash(), showRegisterForm: true });
+    if (req.cookies.token) {
+        return res.redirect('/dashboard');
+    }
+    return renderWithMessages(res, 'register', req.flash(), true);
 });
 
 router.post('/account', async (req, res) => {
     const { action } = req.body;
 
-    if (action === 'login') {
-        try {
-            const { email, password } = req.body;
-            
-            if (!email || !password) {
-                req.flash('error', 'All fields are required');
-                return res.render('register', { messages: req.flash(), showRegisterForm: false });
-            }
-
-            const user = await User.findOne({ email });
-            if (!user) {
-                req.flash('error', 'Invalid email or password');
-                return res.render('register', { messages: req.flash(), showRegisterForm: false });
-            }
-
-            isPasswordValid = await bcrypt.compare(password, user.password);
-            if (!isPasswordValid) {
-                req.flash('error', 'Invalid email or password');
-                return res.render('register', { messages: req.flash(), showRegisterForm: false });
-            }
-            
-            const token = jwt.sign({ userId:user._id }, jwtSecret);
-            res.cookie('token', token, { httpOnly: true });
-
-            res.redirect('/dashboard');
-
-        } catch (error) {
-            req.flash('error', 'An error occurred');
-            return res.redirect('/account');
-        }
-
+    // Common validation logic
+    console.log(req.body);
+    console.log(action);
+    const { email, password, username, confirmPassword } = req.body;
+    if (!email || !password || (action === 'register' && (!username || !confirmPassword))) {
+        req.flash('error', 'All fields are required');
+        return renderWithMessages(res, 'register', req.flash(), action === 'register', email, username);
     }
-    else if (action === 'register') {
-        try {
-            const { username, email, password, confirmPassword } = req.body;
 
-            if (!username || !email || !password || !confirmPassword) {
-                req.flash('error', 'All fields are required');
-                return res.render('register', { messages: req.flash(), showRegisterForm: true });
-            }
-
-            emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-            if (!emailPattern.test(email)) {
-                req.flash('error', 'Invalid email address');
-                return res.render('register', { messages: req.flash(), showRegisterForm: true });
-            }
-
-            if (password !== confirmPassword) {
-                req.flash('error', 'Passwords do not match');
-                return res.render('register', { messages: req.flash(), showRegisterForm: true });
-            }
-
-            passwordAllowed = /^[a-zA-Z0-9!.@#$%^&*]{6,20}$/;
-            if (!passwordAllowed.test(password)) {
-                req.flash('error', 'Password must be 6-20 chars and contain at least one special character');
-                return res.render('register', { messages: req.flash(), showRegisterForm: true });
-            }
-
-            const emailExists = await User.findOne({email});
-            if (emailExists) {
-                req.flash('error', 'Email already registered');
-                return res.render('register', { messages: req.flash(), showRegisterForm: true });
-            }
-            const usernameExists = await User.findOne({username});
-            if (usernameExists) {
-                req.flash('error', 'Username already exists');
-                return res.render('register', { messages: req.flash(), showRegisterForm: true });
-            }
-
-            const hashedPassword = await bcrypt.hash(password, 10);
-
-            try {
-                const user = await User.create({ 
-                    email, 
-                    username, 
-                    password: hashedPassword,
-                    verified: false
-                });
-
-                sendOTPVerificationEmail(req, { _id: user._id, email: user.email }, res);
-
-                req.session.userId = user._id; 
-                req.session.email = email;
-                req.flash('success', 'Please verify your email address');
-                return res.redirect('/otpvalidation');
-            } catch (error) {
-                res.status(500).json({ message: 'An error occurred', error });
-            }
-        } catch (error) {
-            req.flash('error', 'An error occurred');
-            return res.redirect('/account');
-        }
-    }
-});
-
-const authMiddleware = (req, res, next) => {
-    const token = req.cookies.token;
-
-    if (!token) {
-        req.flash('error', 'Unauthorized');
-        return res.redirect('/account');
+    if (!isValidEmail(email)) {
+        req.flash('error', 'Invalid email address');
+        return renderWithMessages(res, 'register', req.flash(), action === 'register', email, username);
     }
 
     try {
-        const decoded = jwt.verify(token, jwtSecret);
-        req.userId = decoded.userId;
-        next();
+        if (action === 'login') {
+            const user = await User.findOne({ email });
+            const isPasswordValid = user && await bcrypt.compare(password, user.password);
+            
+            if (!isPasswordValid) {
+                req.flash('error', 'Invalid email or password');
+                return renderWithMessages(res, 'register', req.flash(), false, email);
+            }
+
+            if (!user.verified) {
+                await verifyUser(req, { _id: user._id, email: user.email }, res);
+                req.flash('success', 'Please verify your email address');
+                return res.redirect('/otpvalidation');
+            }
+
+            const token = jwt.sign({ userId: user._id }, jwtSecret);
+            res.cookie('token', token, { httpOnly: true });
+            return res.redirect('/dashboard');
+        } 
+        else if (action === 'register') {
+            if (password !== confirmPassword) {
+                req.flash('error', 'Passwords do not match');
+                return renderWithMessages(res, 'register', req.flash(), true, email, username);
+            }
+
+            if (!isValidPassword(password)) {
+                req.flash('error', 'Password must be 6-20 chars and contain at least one special character');
+                return renderWithMessages(res, 'register', req.flash(), true, email, username);
+            }
+
+            const emailExists = await User.findOne({ email });
+            const usernameExists = await User.findOne({ username });
+
+            if (emailExists) {
+                req.flash('error', 'Email already registered');
+                return renderWithMessages(res, 'register', req.flash(), true, '', username);
+            }
+
+            if (usernameExists) {
+                req.flash('error', 'Username already exists');
+                return renderWithMessages(res, 'register', req.flash(), true, email, '');
+            }
+
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const user = await User.create({
+                email,
+                username: username.trim(),
+                password: hashedPassword,
+                verified: false
+            });
+
+            await verifyUser(req, user, res);
+            req.flash('success', 'Please verify your email address');
+            return res.redirect('/otpvalidation');
+        }
     } catch (error) {
-        req.flash('error', 'Unauthorized');
+        req.flash('error', 'An error occurred');
+        return res.redirect('/account');
+    }
+});
+
+const verifyUser = async (req, user, res) => {
+    try {
+        await sendOTPVerificationEmail(req, { _id: user._id, email: user.email }, res);
+        req.session.userId = user._id; 
+        req.session.email = user.email;
+    } catch (error) {
+        console.error(error);
+        req.flash('error', 'An error occurred while verifying user');
         return res.redirect('/account');
     }
 };
-
-router.get('/dashboard', authMiddleware, async (req, res) => {
-    res.render('user/dashboard', { messages: req.flash() });
-    // try {
-    //     const locals = {
-    //         title: "Dashboard",
-    //         description: "eCommerce for used books"
-    //     }
-    //     const user
-
-
-});
 
 /* OTP */
 let transporter = nodemailer.createTransport({
@@ -289,11 +276,12 @@ const sendOTPVerificationEmail = async (req, { _id, email }, res) => {
     } catch (error) {
         console.log(error);
         req.flash('error', 'An error occurred');
-        return res.render('register', { messages: req.flash(), showRegisterForm: true });
+        return renderWithMessages(res, 'register', req.flash(), true);
     }
 };
 
 router.get('/otpvalidation', (req, res) => {
+    console.log(req.session);
     const userId = req.session.userId;
     const email = req.session.email;
 
@@ -301,24 +289,25 @@ router.get('/otpvalidation', (req, res) => {
         req.flash('error', 'Unauthorized access. Please register or log in.');
         return res.redirect('/account'); 
     }
-    res.render('auth/otpvalidation', { messages: req.flash(), email, userId });
+    res.render('auth/otpvalidation', { messages: req.flash(), email:censorEmail(email), userId });
 });
 
 router.post('/otpvalidation', async (req, res) => {
     try {
         const { userId } = req.body;
-        const otp = req.body.otp.join('');  // Join OTP parts to form complete OTP
+        const otp = req.body.otp.join('');
+        email = req.session.email
 
         if (!userId || !otp) {
             req.flash('error', 'OTP is required');
-            return res.render('auth/otpvalidation', { messages: req.flash() });
+            return res.render('auth/otpvalidation', { messages: req.flash(), email, userId });
         }
 
         const userOTPRecords = await UserOTPVerification.find({ userId });
 
         if (userOTPRecords.length <= 0) {
             req.flash('error', 'Account record does not exist or has already been verified');
-            return res.render('register', { messages: req.flash() });
+            return renderWithMessages(res, 'register', req.flash(), false);
         }
 
         const { expiresAt, otp: hashedOTP } = userOTPRecords[0];
@@ -326,13 +315,13 @@ router.post('/otpvalidation', async (req, res) => {
         if (expiresAt < new Date()) {
             await UserOTPVerification.deleteMany({ userId });
             req.flash('error', 'OTP has expired');
-            return res.render('auth/otpvalidation', { messages: req.flash() });
+            return res.render('auth/otpvalidation', { messages: req.flash(), email, userId });
         }
 
         const isOTPValid = await bcrypt.compare(otp, hashedOTP);
         if (!isOTPValid) {
             req.flash('error', 'Invalid OTP');
-            return res.render('auth/otpvalidation', { messages: req.flash() });
+            return res.render('auth/otpvalidation', { messages: req.flash(), email, userId });
         }
 
         // Mark user as verified
@@ -340,12 +329,43 @@ router.post('/otpvalidation', async (req, res) => {
         await UserOTPVerification.deleteMany({ userId });
 
         req.flash('success', 'Account verified successfully. Please log in.');
-        return res.render('register', { messages: req.flash(), showRegisterForm: false });
+        return renderWithMessages(res, 'register', req.flash(), false);
     } catch (error) {
         console.error(error);
         req.flash('error', 'An error occurred. Please try again.');
-        return res.render('auth/otpvalidation', { messages: req.flash() });
+        return res.render('auth/otpvalidation', { messages: req.flash(), email: req.session.email, userId: req.session.userId });                                                                                                                                       
     }
+});
+
+/* PROFILE DASHBOARD */
+const authMiddleware = (req, res, next) => {
+    const token = req.cookies.token;
+
+    if (!token) {
+        req.flash('error', 'Unauthorized');
+        return res.redirect('/account');
+    }
+
+    try {
+        const decoded = jwt.verify(token, jwtSecret);
+        req.userId = decoded.userId;
+        next();
+    } catch (error) {
+        req.flash('error', 'Unauthorized');
+        return res.redirect('/account');
+    }
+};
+
+router.get('/dashboard', authMiddleware, async (req, res) => {
+    res.render('user/dashboard', { messages: req.flash() });
+    // try {
+    //     const locals = {
+    //         title: "Dashboard",
+    //         description: "eCommerce for used books"
+    //     }
+    //     const user
+
+
 });
 
 

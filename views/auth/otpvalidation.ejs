@@ -23,7 +23,7 @@
     <div class="container-otp">
         <div class="card text-center">
             <h6>Please enter the one-time password <br> to verify your account</h6>
-            <div><span>A code has been sent to <b><%= email %></b></span></div>
+            <div><span>A code has been sent to <b><%= email ? JSON.stringify(email) : "Email not found" %></b></span></div>
 
             <!-- OTP Form -->
             <form action="/otpvalidation" method="POST">
@@ -50,32 +50,44 @@
 
     
     <script>
-        // This function makes the OTP input fields smooth (no need to click on each field to enter the OTP)
         document.addEventListener("DOMContentLoaded", function(event) {
             function OTPInput() {
-                const inputs = document.querySelectorAll('#otp > *[id]');
-                
+                const inputs = document.querySelectorAll('#otp > input');
+
                 inputs.forEach((input, index) => {
-                    input.addEventListener('keydown', function(event) {
-                        if (event.key === "Backspace") {
-                            input.value = '';
-                            if (index !== 0) inputs[index - 1].focus();
-                        } else {
-                            if (index === inputs.length - 1 && input.value !== '') {
-                                return true;
-                            } else if (event.keyCode > 47 && event.keyCode < 58) {
-                                input.value = event.key;
-                                if (index !== inputs.length - 1) inputs[index + 1].focus();
-                                event.preventDefault();
-                            } else if (event.keyCode > 64 && event.keyCode < 91) {
-                                input.value = String.fromCharCode(event.keyCode);
-                                if (index !== inputs.length - 1) inputs[index + 1].focus();
-                                event.preventDefault();
-                            }
+                    // Handle individual input events
+                    input.addEventListener('input', function(event) {
+                        const value = input.value;
+
+                        // Automatically move to the next field when typing
+                        if (value.length === 1 && index < inputs.length - 1) {
+                            inputs[index + 1].focus();
                         }
+
+                        // Clear value on backspace and move focus to previous
+                        if (value === '' && event.inputType === 'deleteContentBackward' && index > 0) {
+                            inputs[index - 1].focus();
+                        }
+                    });
+
+                    // Handle pasting of OTP
+                    input.addEventListener('paste', function(event) {
+                        const paste = (event.clipboardData || window.clipboardData).getData('text').slice(0, inputs.length);
+                        const pasteChars = paste.split('');
+
+                        // Fill in each input field with the respective pasted character
+                        inputs.forEach((input, i) => {
+                            input.value = pasteChars[i] || '';
+                        });
+
+                        // Focus on the last filled input field
+                        inputs[Math.min(pasteChars.length, inputs.length) - 1].focus();
+
+                        event.preventDefault();
                     });
                 });
             }
+
             OTPInput();
         });
     </script>

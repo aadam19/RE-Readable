@@ -654,8 +654,6 @@ input[type="email"], input[type="password"] {
     }
 }
 
-
-
 /* OTP STYLING */
 .container-otp {
     display: flex;
@@ -741,4 +739,26 @@ input[type="email"], input[type="password"] {
     .validate {
         width: 100%;
     }
+}
+
+/* OTP ALERT STYLING */
+.alert {
+    justify-content: center;
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.alert-danger {
+    color: #a94442;
+    background-color: #f2dede;
+    border-color: #ebccd1;
+}
+
+.alert-success {
+    color: #3c763d;
+    background-color: #dff0d8;
+    border-color: #d6e9c6;
 }

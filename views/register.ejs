@@ -34,27 +34,6 @@
             display: block;
         }
 
-        .alert {
-            justify-content: center;
-            text-align: center;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid transparent;
-            border-radius: 4px;
-        }
-
-        .alert-danger {
-            color: #a94442;
-            background-color: #f2dede;
-            border-color: #ebccd1;
-        }
-
-        .alert-success {
-            color: #3c763d;
-            background-color: #dff0d8;
-            border-color: #d6e9c6;
-        }
-
         .input-group {
             position: relative;
             align-items: center;
@@ -109,7 +88,7 @@
                 <h2>Login</h2>
                 <div class="input-group">
                     <label for="login-email">Email:</label>
-                    <input type="email" id="login-email" name="email" placeholder="Enter your email" required>
+                    <input type="email" id="login-email" name="email" value="<%= email ? email : '' %>" placeholder="Enter your email" required>
                 </div>
                 <div class="input-group">
                     <label for="login-password">Password:</label>
@@ -125,11 +104,11 @@
                 <h2>Register</h2>
                 <div class="input-group">
                     <label for="reg-email">Email:</label>
-                    <input type="email" id="reg-email" name="email" placeholder="Enter your email" required>
+                    <input type="email" id="reg-email" name="email" value="<%= email ? email : '' %>" placeholder="Enter your email" required>
                 </div>
                 <div class="input-group">
                     <label for="username">Username:</label>
-                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                    <input type="text" id="username" name="username" value="<%= username ? username : '' %>" placeholder="Enter your username" required>
                 </div>
                 <div class="input-group">
                     <label for="reg-password">Password:</label>
