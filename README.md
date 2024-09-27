@@ -15,9 +15,15 @@
 - **Frontend**: HTML, CSS, JavaScript
 - **Backend**: Node.js, Express.js + EJS Templating
 - **Database**: MongoDB
-- **Authentication**: Passport.js or JWT (mock)
+- **Authentication**: JWT
 
 **Note**: This project is for learning and practice purposes only. No actual transactions or real user data are involved.
+
+# **To Do:**
+- Implement user dashboard
+- Implement chat function between users to allow negotiation
+- Implement payment system using Stripe
+- Implement book-sell insertion
 
 ---
 # **Homepage**
