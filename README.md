@@ -20,3 +20,14 @@
 **Note**: This project is for learning and practice purposes only. No actual transactions or real user data are involved.
 
 ---
+# **Homepage**
+![image](https://github.com/user-attachments/assets/1cc6ffa9-6504-4726-9624-22ceb997723f)
+
+# **Login**
+![image](https://github.com/user-attachments/assets/659a6a97-138f-49c9-a9bc-6025aabd36f3)
+
+---
+# **Search**
+![image](https://github.com/user-attachments/assets/d551008a-8cbe-4c59-9197-0d1046bddec0)
+![image](https://github.com/user-attachments/assets/e9e4dcbc-8db3-47da-8a1b-68f8c88698ac)
+
