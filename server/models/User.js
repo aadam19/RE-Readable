@@ -7,6 +7,11 @@ const UserSchema = new Schema({
     password: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
     verified: { type: Boolean, default: false },
+    image: { type: String },
+    favourites: {
+        type: [String], 
+        default: []
+      }
 }, { collection: 'users' });
 
 module.exports = mongoose.model('User', UserSchema);

@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login / Register</title>
-    <link rel="stylesheet" type="text/css" href="../public/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
         body {
-            background-color: beige;
             margin: 0;
             padding: 0;
         }
@@ -88,13 +87,14 @@
                 <h2>Login</h2>
                 <div class="input-group">
                     <label for="login-email">Email:</label>
-                    <input type="email" id="login-email" name="email" value="<%= email ? email : '' %>" placeholder="Enter your email" required>
+                    <input type="email" id="login-email" name="email" autocomplete="email" value="<%= email ? email : '' %>" placeholder="Enter your email" required>
                 </div>
                 <div class="input-group">
                     <label for="login-password">Password:</label>
                     <input type="password" id="login-password" name="password" placeholder="Enter your password" required>
                     <i class="fas fa-eye toggle-password" onclick="togglePassword('login-password')"></i>
                 </div>
+                <a href="/reset_password"">Forgot Password?</a>
                 <button type="submit" class="btn">Login</button>
             </form>
 
@@ -104,15 +104,15 @@
                 <h2>Register</h2>
                 <div class="input-group">
                     <label for="reg-email">Email:</label>
-                    <input type="email" id="reg-email" name="email" value="<%= email ? email : '' %>" placeholder="Enter your email" required>
+                    <input type="email" id="reg-email" name="email" autocomplete="email" value="<%= email ? email : '' %>" placeholder="Enter your email" required>
                 </div>
                 <div class="input-group">
                     <label for="username">Username:</label>
-                    <input type="text" id="username" name="username" value="<%= username ? username : '' %>" placeholder="Enter your username" required>
+                    <input type="text" id="username" name="username" autocomplete="username" value="<%= username ? username : '' %>" placeholder="Enter your username" required>
                 </div>
                 <div class="input-group">
                     <label for="reg-password">Password:</label>
-                    <input type="password" id="reg-password" name="password" placeholder="Enter your password" required>
+                    <input type="password" id="reg-password" name="password" autocomplete="new-password" placeholder="Enter your password" required>
                     <i class="fas fa-eye toggle-password" onclick="togglePassword('reg-password')"></i>
                 </div>
                 <div class="input-group">
@@ -121,8 +121,10 @@
                     <i class="fas fa-eye toggle-password" onclick="togglePassword('reg-confirm-password')"></i>
                 </div>
                 <button type="submit" class="btn">Register</button>
+                
             </form>
         </div>
+        
     </div>
 
     <script>
@@ -130,8 +132,10 @@
             const passwordField = document.getElementById(id);
             const type = passwordField.type === 'password' ? 'text' : 'password';
             passwordField.type = type;
+
             const icon = event.target;
             icon.classList.toggle('fa-eye-slash');
+            icon.classList.toggle('fa-eye');
         }
 
         window.onload = function() {
