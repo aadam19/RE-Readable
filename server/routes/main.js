@@ -373,8 +373,12 @@ router.post('/otpvalidation', async (req, res) => {
         await UserOTPVerification.deleteMany({ userId });
 
         if (resetRequest) {
+            // Set flag to allow access to change password without auth middleware
+            req.session.passwordResetAllowed = true;
+            req.session.email = email;
+            req.session.userId = userId;
             req.flash('success', 'OTP verified successfully. Please reset your password.');
-            return res.render('auth/change_password', { messages: req.flash(), email });
+            return res.redirect('/change_password');  // Redirect to change_password
         }
 
         await User.updateOne({ _id: userId }, { verified: true });
@@ -411,6 +415,8 @@ router.post('/reset_password', async (req, res) => {
 
         await sendOTPVerificationEmail(req, { _id: user._id, email }, res);
         req.session.reset_request = true;
+        req.session.userId = user._id;
+        req.session.email = email;
         res.render('auth/otpvalidation', { email: censorEmail(email), userId: user._id, reset_request: true });
     } catch (error) {
         console.error(error);
@@ -439,14 +445,28 @@ const authMiddleware = (req, res, next) => {
 };
 
 // Change Password - GET
-router.get('/change_password', authMiddleware, (req, res) => {
-    res.render('auth/change_password');
+router.get('/change_password', (req, res) => {
+    if (req.session.passwordResetAllowed) {
+        // Render password reset form if allowed by session flag
+        console.log("Change password (reset flow) request...");
+        const email = req.session.email;
+        const userId = req.session.userId;
+        console.log("Email: ", email);
+        console.log("User ID: ", userId);
+        req.flash('success', 'Please enter your new password');
+        return res.render('auth/change_password', { messages: req.flash() });
+    }
+    // Otherwise, enforce authMiddleware
+    authMiddleware(req, res, () => {
+        console.log("Change password (logged-in user) request...");
+        res.render('auth/change_password');
+    });
 });
 
-// Change Password - POST
-router.post('/change_password', authMiddleware, async (req, res) => {
-    const { password, confirmPassword } = req.body;
 
+// Change Password - POST
+router.post('/change_password', async (req, res) => {
+    const { password, confirmPassword } = req.body;
     if (password !== confirmPassword) {
         req.flash('error', 'Passwords do not match');
         return res.render('auth/change_password', { messages: req.flash() });
@@ -459,15 +479,32 @@ router.post('/change_password', authMiddleware, async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        await User.updateOne({ _id: req.userId }, { password: hashedPassword });
-        req.flash('success', 'Password updated successfully');
-        return res.redirect('/dashboard');
+        
+        // Update the password for the user from session
+        const userId = req.userId || req.session.userId;
+        const email = req.session.email;
+
+        console.log("User ID: ", userId);
+        console.log("Email: ", email);
+        await User.updateOne({ _id: userId }, { password: hashedPassword });
+        
+        // Clear the reset session flag and redirect based on the flow
+        req.session.passwordResetAllowed = false;
+        req.flash('success', 'Password reset successfully. Please log in.');
+
+        if (req.session.reset_request) {
+            delete req.session.reset_request;
+        }
+        console.log("Password: ", password);
+        console.log("Password hashed: ", hashedPassword);
+        return res.redirect('/account');
     } catch (error) {
         console.error(error);
         req.flash('error', 'An error occurred');
         return res.render('auth/change_password', { messages: req.flash() });
     }
-});    
+});
+
 
 router.get('/dashboard', authMiddleware, async (req, res) => {
     try {
