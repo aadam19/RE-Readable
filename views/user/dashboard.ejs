@@ -1,95 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.3.2/mdb.min.css"
-    rel="stylesheet"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= locals.title %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      color: black;
+      justify-content: center;
+      margin: 0;
+    }
 
-    <style>
-        body {
-            background-color: beige;
-        }
-    </style>
+    nav {
+        padding: 15px;
+        text-align: center;
+    }
+
+    nav a {
+        visibility: hidden;
+    }
+
+    .header_button {
+        display: none;
+    }
+
+    .book-item {
+      display: flex;
+      align-items: flex-start;
+      margin: 10px 0;
+      position: relative; 
+    }
+
+    .book-item.hidden {
+      display: none;
+    }
+
+    .book-image {
+      width: 100px;
+      height: 150px;
+      margin-right: 20px;
+    }
+
+    .book-details {
+      flex: 1;
+      position: relative; /* Needed for absolute positioning of buttons */
+    }
+
+    .button-book {
+      position: absolute; /* Position buttons */
+      bottom: 10px;
+      right: 10px;
+      display: inline-flex;
+    }
+
+    .button-book button {
+      margin-left: 5px;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .button-container {
+      margin-bottom: 20px; /* Adjust spacing */
+    }
+  </style>
 </head>
 <body>
-    <section class="h-100 gradient-custom-2">
-        <div class="container py-5 h-100">
-          <div class="row d-flex justify-content-center">
-            <div class="col col-lg-9 col-xl-8">
-              <div class="card">
-                <div class="rounded-top text-white d-flex flex-row" style="background-color: #000; height:200px;">
-                  <div class="ms-4 mt-5 d-flex flex-column" style="width: 150px;">
-                    <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-profiles/avatar-1.webp"
-                      alt="Generic placeholder image" class="img-fluid img-thumbnail mt-4 mb-2"
-                      style="width: 150px; z-index: 1">
-                    <button  type="button" data-mdb-button-init data-mdb-ripple-init class="btn btn-outline-dark text-body" data-mdb-ripple-color="dark" style="z-index: 1;">
-                      Edit profile
-                    </button>
-                  </div>
-                  <div class="ms-3" style="margin-top: 130px;">
-                    <h5>Andy Horwitz</h5>
-                    <p>New York</p>
-                  </div>
-                </div>
-                <div class="p-4 text-black bg-body-tertiary">
-                  <div class="d-flex justify-content-end text-center py-1 text-body">
-                    <div>
-                      <p class="mb-1 h5">253</p>
-                      <p class="small text-muted mb-0">Photos</p>
-                    </div>
-                    <div class="px-3">
-                      <p class="mb-1 h5">1026</p>
-                      <p class="small text-muted mb-0">Followers</p>
-                    </div>
-                    <div>
-                      <p class="mb-1 h5">478</p>
-                      <p class="small text-muted mb-0">Following</p>
-                    </div>
-                  </div>
-                </div>
-                <div class="card-body p-4 text-black">
-                  <div class="mb-5  text-body">
-                    <p class="lead fw-normal mb-1">About</p>
-                    <div class="p-4 bg-body-tertiary">
-                      <p class="font-italic mb-1">Web Developer</p>
-                      <p class="font-italic mb-1">Lives in New York</p>
-                      <p class="font-italic mb-0">Photographer</p>
-                    </div>
-                  </div>
-                  <div class="d-flex justify-content-between align-items-center mb-4 text-body">
-                    <p class="lead fw-normal mb-0">Recent photos</p>
-                    <p class="mb-0"><a href="#!" class="text-muted">Show all</a></p>
-                  </div>
-                  <div class="row g-2">
-                    <div class="col mb-2">
-                      <img src="https://mdbcdn.b-cdn.net/img/Photos/Lightbox/Original/img%20(112).webp" alt="image 1"
-                        class="w-100 rounded-3">
-                    </div>
-                    <div class="col mb-2">
-                      <img src="https://mdbcdn.b-cdn.net/img/Photos/Lightbox/Original/img%20(107).webp" alt="image 1"
-                        class="w-100 rounded-3">
-                    </div>
-                  </div>
-                  <div class="row g-2">
-                    <div class="col">
-                      <img src="https://mdbcdn.b-cdn.net/img/Photos/Lightbox/Original/img%20(108).webp" alt="image 1"
-                        class="w-100 rounded-3">
-                    </div>
-                    <div class="col">
-                      <img src="https://mdbcdn.b-cdn.net/img/Photos/Lightbox/Original/img%20(114).webp" alt="image 1"
-                        class="w-100 rounded-3">
-                    </div>
-                  </div>
-                </div>
-              </div>
+  <div class="dashboard">
+    <img src="<%= locals.user.image %>" class="user-profile" alt="<%= locals.user.username %>">
+    <h1>Welcome, <%= locals.user.username %>!</h1>
+    <div class="user-info">
+      <h2><%= locals.user.name %></h2>
+      <p><%= locals.user.email %></p>
+    </div>
+
+    <div class="button-container">
+      <a href="/user/settings">Account Settings</a>
+      <a href="/user/favourites">Favourites</a>
+    </div>
+
+    <div class="books-list">
+      <h3>Your Books for Sale:</h3>
+      <% if (locals.posts.length > 0) { %>
+        <% locals.posts.forEach(function(book, index) { %>
+          <div class="book-item <%= index >= 2 ? 'hidden' : '' %>">
+            <img src="<%= book.img %>" alt="Book Image" class="book-image">
+            <div class="book-details">
+              <h4><a href="/books/<%= book._id %>"><%= book.title %></a></h4>
+              <p>Author: <%= book.author %></p>
+              <p>Price: $<%= book.price %></p>
+              <p>Status: <%= book.status %></p>
+            </div>
+            <div class="button-book">
+              <button class="button-32" onclick="window.location.href='/books/<%= book._id %>/edit'">Modify</button>
+              <button class="button-32" onclick="if(confirm('Are you sure you want to delete this book?')) { window.location.href='/books/<%= book._id %>/delete' }">Delete</button>
             </div>
           </div>
-        </div>
-    </section>
-      <!-- MDB -->
-    <script type="text/javascript"
-    src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.3.2/mdb.umd.min.js"></script>
+        <% }); %>
+
+        <!-- Show the "See More" button only if there are more than 2 books -->
+        <% if (locals.posts.length > 2) { %>
+          <button class="button-32" id="see-more">See More</button>
+        <% } %>
+      <% } else { %>
+        <p>You currently have no books for sale.</p>
+      <% } %>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const seeMoreButton = document.getElementById('see-more');
+      if (seeMoreButton) {
+        seeMoreButton.addEventListener('click', function() {
+          const hiddenItems = document.querySelectorAll('.book-item.hidden');
+          hiddenItems.forEach(item => item.classList.remove('hidden'));
+          seeMoreButton.style.display = 'none';
+        });
+      }
+    });
+  </script>
 </body>
 </html>

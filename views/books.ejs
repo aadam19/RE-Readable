@@ -1,11 +1,27 @@
 <div class="bookpg">
     <div class="content">
+
         <div class="image-column">
             <img src="<%= data.img %>" alt="Book Image">
         </div>
         <div class="text-column">
+            <% if (messages.error && messages.error.length > 0) { %>
+                <div class="alert alert-danger">
+                    <% messages.error.forEach(function(msg) { %>
+                        <p><%= msg %></p>
+                    <% }); %>
+                </div>
+            <% } %>
+        
+            <% if (messages.success && messages.success.length > 0) { %>
+                <div class="alert alert-success">
+                    <% messages.success.forEach(function(msg) { %>
+                        <p><%= msg %></p>
+                    <% }); %>
+                </div>
+            <% } %>
             <div class="header">
-                <p><%= data.createdAt.toDateString() %></p>
+                <p><%= new Date(data.createdAt).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></p>
             </div>
             <div class="body">
                 <h2> <%= data.title %> </h2>
@@ -21,10 +37,20 @@
                     <a href=""><%= data.owner %></a>
                 </p>
             </div>
+
+
+            
             <div class="footer">
                 <h2><%= data.price %>$</h2>
-                <button class="button-32" role="button"> Bid </button>
+            
+                <% if (locals.addFavourite) { %>
+                    <a href="/add-favourite/<%= data._id %>" class="button-32" role="button">Add to favourites</a>
+                <% } else { %>
+                    <a href="/remove-favourite/<%= data._id %>" class="button-32" role="button">Remove from favourites</a>
+                <% } %>
                 
+                <h3></h3>
+                <button class="button-32" role="button" style="background-color: #be0b0b; color: #fff;"> Bid </button>
             </div>
         </div>
     </div>

@@ -6,6 +6,9 @@ const UserOTPVerification = require('../models/UserOTPVerification')
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require("nodemailer");
+const e = require('connect-flash');
+const mongoose = require('mongoose');
+const { ObjectId } = mongoose.Types;
 
 const jwtSecret = process.env.JWT_SECRET;
 
@@ -67,25 +70,39 @@ router.get('', async (req, res) => {
 });
 
 
+
 /* GET _ID */
-router.get('/books/:id', async (req, res)=> {
+router.get('/books/:id', async (req, res) => {
     try {
-        const locals = {
-            title: "RE | Readable",
-            description: "eCommerce for used books"
-        }
         let slug = req.params.id;
         const data = await Post.findById({ _id: slug });
 
-        res.render('books', {
-            locals, 
-            data
-        });
+        let addFavourite = true;
+        console.log(data.createdAt); 
+        // Check if user is logged in
+        if (req.userId) {
+            // Fetch the user information
+            const user = await User.findById(req.userId);
+            if (user && user.favourites.some(fav => fav.equals(mongoose.Types.ObjectId(slug)))) {
+                addFavourite = false;
+            }
+        }
 
+        const locals = {
+            title: "RE | Readable",
+            description: "eCommerce for used books",
+            addFavourite: addFavourite
+        };
+
+        res.render('books', {
+            locals,
+            data,
+        });
     } catch (error) {
-        console.log(error)
+        console.log(error);
+        res.status(500).send('Server error');
     }
-})
+});
 
 
 /* POST SEARCH */
@@ -119,7 +136,7 @@ router.post('/search', async (req, res)=>{
 
 /* ACCOUNT */
 
-// Helper function for readability
+// Helper function for rendering views with messages
 const renderWithMessages = (res, view, messages, showRegisterForm, email = '', username = '') => {
     res.render(view, {
         messages: messages,
@@ -129,14 +146,23 @@ const renderWithMessages = (res, view, messages, showRegisterForm, email = '', u
     });
 };
 
+// Helper function for validating email and password
 const isValidEmail = (email) => {
     const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
     return emailPattern.test(email);
 };
 
 const isValidPassword = (password) => {
-    const passwordAllowed = /^[a-zA-Z0-9!.@#$%^&*]{6,20}$/;
-    return passwordAllowed.test(password);
+    const minLength = 6;
+    const maxLength = 20;
+    const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+
+    return (
+        typeof password === 'string' &&
+        password.length >= minLength &&
+        password.length <= maxLength &&
+        specialCharRegex.test(password)
+    );
 };
 
 router.get('/account', (req, res) => {
@@ -147,11 +173,10 @@ router.get('/account', (req, res) => {
 });
 
 router.post('/account', async (req, res) => {
+    console.log("Form submitted:", req.body);
     const { action } = req.body;
-
+    console.log("Action submitted:", action);
     // Common validation logic
-    console.log(req.body);
-    console.log(action);
     const { email, password, username, confirmPassword } = req.body;
     if (!email || !password || (action === 'register' && (!username || !confirmPassword))) {
         req.flash('error', 'All fields are required');
@@ -165,55 +190,70 @@ router.post('/account', async (req, res) => {
 
     try {
         if (action === 'login') {
+            // Retrieve user records
             const user = await User.findOne({ email });
             const isPasswordValid = user && await bcrypt.compare(password, user.password);
             
+            // Check if user exists and password is valid
             if (!isPasswordValid) {
                 req.flash('error', 'Invalid email or password');
                 return renderWithMessages(res, 'register', req.flash(), false, email);
             }
-
+            // Check if user is verified
             if (!user.verified) {
                 await verifyUser(req, { _id: user._id, email: user.email }, res);
                 req.flash('success', 'Please verify your email address');
                 return res.redirect('/otpvalidation');
             }
-
+            // Generate JWT token
             const token = jwt.sign({ userId: user._id }, jwtSecret);
             res.cookie('token', token, { httpOnly: true });
             return res.redirect('/dashboard');
         } 
         else if (action === 'register') {
+            console.log("Entering registration logic...");
             if (password !== confirmPassword) {
                 req.flash('error', 'Passwords do not match');
                 return renderWithMessages(res, 'register', req.flash(), true, email, username);
             }
 
+            // Password validation
             if (!isValidPassword(password)) {
                 req.flash('error', 'Password must be 6-20 chars and contain at least one special character');
                 return renderWithMessages(res, 'register', req.flash(), true, email, username);
             }
 
+            console.log("Validations passed, checking for existing email/username...");
+
+            // Retrieve user records
             const emailExists = await User.findOne({ email });
             const usernameExists = await User.findOne({ username });
 
+            // Check if email already exists
             if (emailExists) {
                 req.flash('error', 'Email already registered');
                 return renderWithMessages(res, 'register', req.flash(), true, '', username);
             }
 
+            // Check if username already exists
             if (usernameExists) {
                 req.flash('error', 'Username already exists');
                 return renderWithMessages(res, 'register', req.flash(), true, email, '');
             }
 
+            // Hash the password
             const hashedPassword = await bcrypt.hash(password, 10);
+
+            // Create the user
             const user = await User.create({
                 email,
                 username: username.trim(),
                 password: hashedPassword,
-                verified: false
+                verified: false,
+                image: '../../public/images/default.jpg'
             });
+            
+            console.log("User created:", user);
 
             await verifyUser(req, user, res);
             req.flash('success', 'Please verify your email address');
@@ -280,32 +320,38 @@ const sendOTPVerificationEmail = async (req, { _id, email }, res) => {
     }
 };
 
+// OTP Validation - GET
 router.get('/otpvalidation', (req, res) => {
-    console.log(req.session);
-    const userId = req.session.userId;
-    const email = req.session.email;
+    const { userId, email, reset_request } = req.session;
 
     if (!userId || !email) {
         req.flash('error', 'Unauthorized access. Please register or log in.');
-        return res.redirect('/account'); 
+        return res.redirect('/account');
     }
-    res.render('auth/otpvalidation', { messages: req.flash(), email:censorEmail(email), userId });
+
+    res.render('auth/otpvalidation', {
+        messages: req.flash(),
+        email: censorEmail(email),
+        userId,
+        reset_request: Boolean(reset_request)
+    });
 });
 
+// OTP Validation - POST
 router.post('/otpvalidation', async (req, res) => {
+    const { userId, otp } = req.body;
+    const email = req.session.email;
+    const resetRequest = req.session.reset_request || false;
+
+    if (!userId || !otp) {
+        req.flash('error', 'OTP is required');
+        return res.render('auth/otpvalidation', { messages: req.flash(), email, userId });
+    }
+
     try {
-        const { userId } = req.body;
-        const otp = req.body.otp.join('');
-        email = req.session.email
-
-        if (!userId || !otp) {
-            req.flash('error', 'OTP is required');
-            return res.render('auth/otpvalidation', { messages: req.flash(), email, userId });
-        }
-
         const userOTPRecords = await UserOTPVerification.find({ userId });
 
-        if (userOTPRecords.length <= 0) {
+        if (userOTPRecords.length === 0) {
             req.flash('error', 'Account record does not exist or has already been verified');
             return renderWithMessages(res, 'register', req.flash(), false);
         }
@@ -318,22 +364,58 @@ router.post('/otpvalidation', async (req, res) => {
             return res.render('auth/otpvalidation', { messages: req.flash(), email, userId });
         }
 
-        const isOTPValid = await bcrypt.compare(otp, hashedOTP);
+        const isOTPValid = await bcrypt.compare(otp.join(''), hashedOTP);
         if (!isOTPValid) {
             req.flash('error', 'Invalid OTP');
             return res.render('auth/otpvalidation', { messages: req.flash(), email, userId });
         }
 
-        // Mark user as verified
-        await User.updateOne({ _id: userId }, { verified: true });
         await UserOTPVerification.deleteMany({ userId });
 
+        if (resetRequest) {
+            req.flash('success', 'OTP verified successfully. Please reset your password.');
+            return res.render('auth/change_password', { messages: req.flash(), email });
+        }
+
+        await User.updateOne({ _id: userId }, { verified: true });
         req.flash('success', 'Account verified successfully. Please log in.');
         return renderWithMessages(res, 'register', req.flash(), false);
     } catch (error) {
         console.error(error);
         req.flash('error', 'An error occurred. Please try again.');
-        return res.render('auth/otpvalidation', { messages: req.flash(), email: req.session.email, userId: req.session.userId });                                                                                                                                       
+        return res.render('auth/otpvalidation', { messages: req.flash(), email, userId });
+    }
+});
+
+// Reset Password - GET
+router.get('/reset_password', (req, res) => {
+    res.render('auth/reset_password');
+});
+
+// Reset Password - POST
+router.post('/reset_password', async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        req.flash('error', 'Email is required');
+        return res.render('auth/reset_password', { messages: req.flash() });
+    }
+
+    try {
+        const user = await User.findOne({ email });
+        
+        if (!user) {
+            req.flash('error', 'No account found with that email');
+            return res.render('auth/reset_password', { messages: req.flash() });
+        }
+
+        await sendOTPVerificationEmail(req, { _id: user._id, email }, res);
+        req.session.reset_request = true;
+        res.render('auth/otpvalidation', { email: censorEmail(email), userId: user._id, reset_request: true });
+    } catch (error) {
+        console.error(error);
+        req.flash('error', 'An error occurred');
+        res.render('auth/reset_password', { messages: req.flash() });
     }
 });
 
@@ -356,17 +438,158 @@ const authMiddleware = (req, res, next) => {
     }
 };
 
-router.get('/dashboard', authMiddleware, async (req, res) => {
-    res.render('user/dashboard', { messages: req.flash() });
-    // try {
-    //     const locals = {
-    //         title: "Dashboard",
-    //         description: "eCommerce for used books"
-    //     }
-    //     const user
+// Change Password - GET
+router.get('/change_password', authMiddleware, (req, res) => {
+    res.render('auth/change_password');
+});
 
+// Change Password - POST
+router.post('/change_password', authMiddleware, async (req, res) => {
+    const { password, confirmPassword } = req.body;
+
+    if (password !== confirmPassword) {
+        req.flash('error', 'Passwords do not match');
+        return res.render('auth/change_password', { messages: req.flash() });
+    }
+
+    if (!isValidPassword(password)) {
+        req.flash('error', 'Password must be 6-20 chars and contain at least one special character');
+        return res.render('auth/change_password', { messages: req.flash() });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await User.updateOne({ _id: req.userId }, { password: hashedPassword });
+        req.flash('success', 'Password updated successfully');
+        return res.redirect('/dashboard');
+    } catch (error) {
+        console.error(error);
+        req.flash('error', 'An error occurred');
+        return res.render('auth/change_password', { messages: req.flash() });
+    }
+});    
+
+router.get('/dashboard', authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId);
+        const posts = await Post.find({ 'owner': user.username });
+        const locals = {
+            title: "Dashboard",
+            description: "eCommerce for used books",
+            user: user,
+            posts: posts,
+            currentPage: 'account'
+        }
+        res.render('user/dashboard', { 
+            locals, 
+        });
+    } catch (error) {
+        console.log(error)
+    }
 
 });
+
+
+router.get('/add-favourite/:id', authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId);
+        let slug = req.params.id;
+        
+        const favourites = Array.isArray(user.favourites) ? user.favourites : [];
+        const book = await Post.findById(slug); // Assuming you have a Book model
+
+        // If book owner is the same as the user, return an error message
+        if (book.owner === user.username) {
+            req.flash('error', 'You cannot add your own book to favourites');
+        } 
+        // If book is already in favourites, return an error message
+        else if (favourites.includes(slug)) {
+            req.flash('error', 'Book already in favourites');
+        }
+        // Otherwise, add the book to favourites
+        else {
+            await User.findByIdAndUpdate(req.userId, { $push: { favourites: slug } }, { new: true });
+            req.flash('success', 'Book added to favourites');
+        }
+        return res.redirect(`/books/${slug}`);
+    } catch (error) {
+        console.log(error);
+        res.status(500).send('Server error');
+    }
+});
+
+
+
+
+
+router.get('/user/favourites', authMiddleware, async (req, res) => {
+    try {
+        let perPage = 24;
+        let page = parseInt(req.query.page) || 1;
+
+        // Get the user by their ID
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return res.status(404).send("User not found");
+        }
+
+        // Use favourites directly if they are already ObjectIds
+        const favourites = user.favourites;
+
+        // Get the total count of favourites
+        const count = favourites.length;
+
+        // Pagination logic
+        const startIndex = (page - 1) * perPage;
+        const paginatedFavourites = favourites.slice(startIndex, startIndex + perPage);
+
+        // Fetch the favourite posts from the database
+        const data = await Post.find({ _id: { $in: paginatedFavourites } })
+            .sort({ createdAt: -1 })  // Sort by creation date
+            .skip(startIndex)
+            .limit(perPage)
+            .exec();
+
+        const hasNextPage = page < Math.ceil(count / perPage);
+        const hasPreviousPage = page > 1;
+        const lastPage = Math.ceil(count / perPage);
+
+        let addFavourite = true;
+
+        // Check if user is logged in
+        if (req.userId) {
+            // Fetch the user information
+            const user = await User.findById(req.userId);
+            if (user && user.favourites.some(fav => fav.equals(mongoose.Types.ObjectId(slug)))) {
+                addFavourite = false;
+            }
+        }
+        
+        const locals = {
+            title: "Favourites",
+            description: "eCommerce for used books",
+            user: user,
+            posts: data,
+            addFavourite: addFavourite
+        };
+
+        res.render('user/favourites', {
+            locals,
+            data,
+            count,
+            truncateString,
+            perPage,
+            current: page,
+            nextPage: hasNextPage ? page + 1 : null,
+            previousPage: hasPreviousPage ? page - 1 : null,
+            lastPage
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).send('Server error');
+    }
+});
+
 
 
 module.exports = router;

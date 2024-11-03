@@ -7,7 +7,7 @@ const PostSchema = new Schema({
     owner: { type: String, required: true },
     condition: { type: String, required: true },
     price: { type: Number, required: true },
-    createdAt: { type: Date, default: Date.now },
+    createdAt: { type: Date, default: Date.now, immutable: true },
     img: { type: String, required: true }
 }, { collection: 'books' });
 

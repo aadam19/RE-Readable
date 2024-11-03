@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
     allButtons.forEach(button => {
         button.addEventListener('click', (event) => {
+            console.log('Search button clicked');
             event.stopPropagation(); 
             openSearchBar();
         });
